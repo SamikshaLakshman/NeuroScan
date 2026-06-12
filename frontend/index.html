@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head> 
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NeuraScan · Brain Tumor Detection</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ░░░ BACKGROUND GRID ░░░ -->
+  <div class="grid-bg" aria-hidden="true"></div>
+  <div class="scan-line" aria-hidden="true"></div>
+
+  <!-- ░░░ HEADER ░░░ -->
+  <header class="header">
+    <div class="header-inner">
+      <div class="logo">
+        <svg class="logo-icon" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="18" cy="18" r="17" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M9 18c0-5 4-9 9-9s9 4 9 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          <path d="M18 9v4M18 23v4M9 18H5M31 18h-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          <circle cx="18" cy="18" r="4" fill="currentColor" opacity="0.3"/>
+          <circle cx="18" cy="18" r="1.5" fill="currentColor"/>
+        </svg>
+        <span class="logo-text">NeuraScan</span>
+        <span class="logo-tag">AI</span>
+      </div>
+      <nav class="header-nav">
+        <span class="status-dot"></span>
+        <span class="status-label">Model Active</span>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ░░░ MAIN ░░░ -->
+  <main class="main">
+
+    <!-- Hero -->
+    <section class="hero">
+      <p class="hero-kicker">Deep Learning · MRI Analysis · EfficientNetB0</p>
+      <h1 class="hero-title">Brain Tumor<br/><em>Detection &amp; Classification</em></h1>
+      <p class="hero-sub">Upload one or more MRI scans. The model classifies each into <strong>Glioma</strong>, <strong>Meningioma</strong>, <strong>Pituitary</strong>, or <strong>No Tumor</strong> — with Grad-CAM heatmap overlay.</p>
+    </section>
+
+    <!-- Upload zone -->
+    <section class="upload-section" id="upload-section">
+      <div class="dropzone" id="dropzone" role="button" tabindex="0" aria-label="Upload MRI scans">
+        <div class="dropzone-inner">
+          <div class="dropzone-icon-wrap">
+            <svg class="dropzone-icon" viewBox="0 0 64 64" fill="none">
+              <rect x="8" y="16" width="48" height="36" rx="4" stroke="currentColor" stroke-width="1.5" stroke-dasharray="4 3"/>
+              <path d="M32 44V28M24 36l8-8 8 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M20 52h24" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.4"/>
+            </svg>
+          </div>
+          <p class="dropzone-title">Drop MRI scans here</p>
+          <p class="dropzone-hint">or <button class="browse-btn" id="browse-btn">browse files</button></p>
+          <p class="dropzone-types">JPG · PNG · BMP · WebP &nbsp;·&nbsp; Multiple allowed</p>
+        </div>
+        <input type="file" id="file-input" accept=".jpg,.jpeg,.png,.bmp,.webp" multiple hidden />
+      </div>
+
+      <!-- Thumbnails strip -->
+      <div class="thumbs-strip" id="thumbs-strip" hidden></div>
+
+      <!-- Action bar -->
+      <div class="action-bar" id="action-bar" hidden>
+        <button class="btn btn-clear" id="clear-btn">✕ Clear</button>
+        <button class="btn btn-analyze" id="analyze-btn">
+          <span class="btn-text">Analyze Scans</span>
+          <span class="btn-count" id="btn-count"></span>
+        </button>
+      </div>
+    </section>
+
+    <!-- Loading state -->
+    <div class="loading-overlay" id="loading-overlay" hidden aria-live="polite">
+      <div class="loader-ring">
+        <div></div><div></div><div></div><div></div>
+      </div>
+      <p class="loading-text">Analysing <span id="loading-count"></span> scan(s)…</p>
+      <p class="loading-sub">Running inference + Grad-CAM</p>
+    </div>
+
+    <!-- Results -->
+    <section class="results-section" id="results-section" hidden>
+      <div class="results-header">
+        <h2 class="results-title">Analysis Results</h2>
+        <span class="results-count" id="results-count"></span>
+      </div>
+      <div class="results-grid" id="results-grid"></div>
+    </section>
+
+    <!-- Prediction history -->
+    <section class="history-section" id="history-section" hidden>
+      <div class="history-header">
+        <h2 class="history-title">Session History</h2>
+        <button class="btn-ghost" id="clear-history-btn">Clear history</button>
+      </div>
+      <div class="history-list" id="history-list"></div>
+    </section>
+
+  </main>
+
+  <!-- ░░░ RESULT CARD TEMPLATE ░░░ -->
+  <template id="result-card-tpl">
+    <article class="result-card">
+      <div class="card-images">
+        <figure class="card-figure">
+          <img class="card-img" data-type="original" alt="Original MRI" />
+          <figcaption>Original</figcaption>
+        </figure>
+        <figure class="card-figure">
+          <img class="card-img" data-type="gradcam" alt="Grad-CAM overlay" />
+          <figcaption>Grad-CAM</figcaption>
+        </figure>
+      </div>
+      <div class="card-body">
+        <p class="card-filename"></p>
+        <div class="card-verdict">
+          <span class="verdict-label"></span>
+          <span class="verdict-badge"></span>
+        </div>
+        <div class="confidence-bar-wrap">
+          <div class="confidence-bar-track">
+            <div class="confidence-bar-fill"></div>
+          </div>
+          <span class="confidence-pct"></span>
+        </div>
+        <div class="prob-breakdown">
+          <!-- injected by JS -->
+        </div>
+      </div>
+    </article>
+  </template>
+
+  <!--
+  <div class="toast" id="toast" role="alert" aria-live="assertive" hidden>
+    <span class="toast-icon">⚠</span>
+    <span class="toast-msg" id="toast-msg"></span>
+  </div>
+-->
+  <script src="script.js"></script>
+</body>
+</html>

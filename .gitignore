@@ -1,0 +1,6 @@
+venv/
+tfgpu/
+__pycache__/
+*.pyc
+*.h5
+*.keras
